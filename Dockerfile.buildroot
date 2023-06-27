@@ -1,0 +1,31 @@
+FROM ubuntu:22.04
+
+ARG CONFIG
+ARG BUILDROOT_VERSION=2023.02.1
+
+ENV BUILDROOT_VERSION=$BUILDROOT_VERSION
+ENV CONFIG=$(CONFIG)
+
+# libssl-dev is needed for u-boot. (Should have put it on the next line)
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive TZ=Asia/Japan \
+    apt-get install -y autoconf automake bison bzip2 cmake flex g++ gawk gcc gettext \
+    git gperf help2man libncurses5-dev libstdc++6 libtool libtool-bin make patch \
+    python3-dev rsync texinfo unzip wget xz-utils
+# vim is helpful. u-boot uses bc
+RUN DEBIAN_FRONTEND=noninteractive TZ=Asia/Japan \
+    apt-get install -y sudo vim libssl-dev bc u-boot-tools
+
+RUN useradd -ms /bin/bash cross && usermod -aG sudo cross
+RUN echo cross:cross | chpasswd
+RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/010_system_sudoers
+RUN chmod 440 /etc/sudoers.d/010_system_sudoers
+USER cross
+
+WORKDIR /build
+
+RUN git clone git://git.buildroot.net/buildroot
+WORKDIR /build/buildroot
+RUN git checkout $(BUILDROOT_VERSION)
+RUN make $(CONFIG)
+RUN make

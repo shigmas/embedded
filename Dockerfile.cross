@@ -1,0 +1,58 @@
+FROM ubuntu:22.04
+
+ARG TOOLCHAIN
+ARG CROSSTOOL_VERSION=crosstool-nb-1.25.0
+
+ENV TOOLCHAIN=$TOOLCHAIN
+ENV CROSSTOOL_VERSION=$CROSSTOOL_VERSION
+
+
+# libssl-dev is needed for u-boot. (Should have put it on the next line)
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive TZ=Asia/Japan \
+    apt-get install -y autoconf automake bison bzip2 cmake flex g++ gawk gcc gettext \
+    git gperf help2man libncurses5-dev libstdc++6 libtool libtool-bin make patch \
+    python3-dev rsync texinfo unzip wget xz-utils
+# vim is helpful. u-boot uses bc
+RUN DEBIAN_FRONTEND=noninteractive TZ=Asia/Japan \
+    apt-get install -y sudo vim libssl-dev bc u-boot-tools
+
+RUN useradd -ms /bin/bash cross && usermod -aG sudo cross
+RUN echo cross:cross | chpasswd
+RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/010_system_sudoers
+RUN chmod 440 /etc/sudoers.d/010_system_sudoers
+USER cross
+
+WORKDIR /build
+
+# These are patch files created from previous runs. See where the code is commented
+# out later.
+ADD custom/* custom/
+
+# clone and build crosstool
+RUN git clone https://github.com/crosstool-ng/crosstool-ng.git
+WORKDIR /build/crosstool-ng
+RUN echo using version "$CROSSTOOL_VERSION"
+RUN git checkout "$CROSSTOOL_VERSION"
+RUN ./bootstrap && ./configure --prefix=${PWD}
+RUN make && make install
+
+# Now, run crosstool
+RUN bin/ct-ng "$TOOLCHAIN"
+# To create this patch:
+# 1. cp .config .config.def
+# 2. bin/ct-ng  menuconfig
+# 3. sudo sh -c "diff -u .config.def .config > /output/$TOOLCHAIN.config.patch"
+# (outside the container, copy the file from output to custom)
+# 4. cp output/* custom/ (you can cut & paste that, or use command line completion,
+#    since the $TOOLCHAIN variable isn't available at that point)
+# (Although, it would be good to just skip the patch if it doesn't exist)
+RUN patch .config < ../custom/"$TOOLCHAIN".config.patch
+
+# Now, finally, build the toolchain
+RUN bin/ct-ng build
+
+# Not exactly sure why "hf" gets appended for bbb. So, adding it with it and without it
+# for the others. One will be an invalid path, but that should be fine.
+# Also, use full path, not ~ because make will fail in the uboot build.
+ENV PATH=/home/cross/x-tools/"$TOOLCHAIN"/bin:/home/cross/x-tools/"$TOOLCHAIN"hf/bin:$PATH
