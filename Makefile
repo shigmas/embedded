@@ -144,5 +144,9 @@ build_yocto_reterminal_image:
 	DOCKER_BUILDKIT=1 docker build -t buildroot.reterminal --build-arg YOCTO_VERSION=$(YOCTO_VERSION) --build-arg BUILD_DIR=build -f Dockerfile.yocto_reterminal .
 
 run_yocto_reterminal_image:
-	docker run -it -v $(PWD)/output:/output buildroot.reterminal
+	docker run -it \
+	-v /opt/yocto/yocto_downloads:/build/reterminal-yocto/downloads \
+	-v /opt/yocto/yocto_download:/yocto_sstate:/build/reterminal-yocto/sstate \
+	-v /opt/yocto/build:/build/reterminal-yocto/builde \
+	-v $(PWD)/output:/output buildroot.reterminal
 

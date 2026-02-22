@@ -59,17 +59,4 @@ RUN bash -c "source layers/poky/oe-init-build-env $BUILD_DIR"
 # This only works when using the interactive bash shell. I don't know how to do this with RUN, so...
 RUN sudo sh -c "echo source /build/reterminal-yocto/layers/poky/oe-init-build-env /build/reterminal-yocto/$BUILD_DIR >> /home/cross/.bashrc"
 
-# These really just add to the conf/bblayers.conf. But, use the tools
-WORKDIR /build/reterminal-yocto/
-RUN bash -c "source layers/poky/oe-init-build-env $BUILD_DIR && bitbake-layers add-layer ../layers/meta-raspberrypi"
-WORKDIR /build/reterminal-yocto/
-RUN bash -c "source layers/poky/oe-init-build-env $BUILD_DIR && bitbake-layers add-layer ../layers/meta-seeed-cm4"
-WORKDIR /build/reterminal-yocto/
-RUN bash -c "source layers/poky/oe-init-build-env $BUILD_DIR && bitbake-layers add-layer ../layers/meta-qt5"
-WORKDIR /build/reterminal-yocto/
-RUN bash -c "source layers/poky/oe-init-build-env $BUILD_DIR && bitbake-layers add-layer ../layers/meta-openembedded/meta-oe"
-WORKDIR /build/reterminal-yocto/
-RUN bash -c "source layers/poky/oe-init-build-env $BUILD_DIR && bitbake-layers add-layer ../layers/meta-openembedded/meta-python"
-
-WORKDIR /build/reterminal-yocto/
-RUN bash -c "source layers/poky/oe-init-build-env $BUILD_DIR && MACHINE=seeed-reterminal bitbake rpi-test-image || true"
+EXEC scripts/reterminal_yocto.sh
