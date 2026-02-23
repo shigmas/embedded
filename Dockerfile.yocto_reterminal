@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 ARG YOCTO_VERSION=dunfell
 ARG BUILD_DIR=build
@@ -22,15 +22,11 @@ RUN DEBIAN_FRONTEND=noninteractive TZ=Asia/Japan \
 
 RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && \
     locale-gen
-ENV LANG en_US.UTF-8  
-ENV LANGUAGE en_US:en  
-ENV LC_ALL en_US.UTF-8
+ENV LANG=en_US.UTF-8  
+ENV LANGUAGE=en_US:en  
+ENV LC_ALL=en_US.UTF-8
 
-RUN useradd -ms /bin/bash cross && usermod -aG sudo cross
-RUN echo cross:cross | chpasswd
-RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/010_system_sudoers
-RUN chmod 440 /etc/sudoers.d/010_system_sudoers
-USER cross
+USER ubuntu
 
 WORKDIR /build/reterminal-yocto/layers
 
@@ -59,4 +55,4 @@ RUN bash -c "source layers/poky/oe-init-build-env $BUILD_DIR"
 # This only works when using the interactive bash shell. I don't know how to do this with RUN, so...
 RUN sudo sh -c "echo source /build/reterminal-yocto/layers/poky/oe-init-build-env /build/reterminal-yocto/$BUILD_DIR >> /home/cross/.bashrc"
 
-EXEC scripts/reterminal_yocto.sh
+CMD ["scripts/reterminal_yocto.sh"]
